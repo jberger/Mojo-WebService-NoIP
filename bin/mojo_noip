@@ -1,0 +1,16 @@
+#!perl
+
+use Mojo::Base -strict;
+use Mojo::WebService::NoIP;
+
+use Getopt::Long;
+
+my $const = {};
+my $args  = {};
+
+GetOptions($const, 'username=s', 'password=s');
+GetOptions($args, 'hostname=s', 'myip=s', 'offline');
+
+my $noip = Mojo::WebService::NoIP->new($const);
+$noip->update($args);
+

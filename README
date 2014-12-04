@@ -1,0 +1,3 @@
+A simple api wrapper for noip.com dynamic updates using Mojo::UserAgent
+
+Released under the same license and terms as Perl itself. Copyright (c) 2014 Joel Berger
