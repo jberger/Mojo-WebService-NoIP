@@ -16,6 +16,8 @@ my $noip = do {
   Mojo::WebService::NoIP->new(\%const);
 };
 
+my $clone = sub { my $self = shift; bless {%$self}, ref $self };
+
 my $command = shift || 'update';
 
 __PACKAGE__->can($command)->();
@@ -23,7 +25,7 @@ __PACKAGE__->can($command)->();
 sub ensure {
   my $delay = Mojo::IOLoop->delay;
  
-  my $ua = $noip->ua->new->max_redirects(0);
+  my $ua = $noip->ua->$clone()->max_redirects(0);
   $ua->get($args->{hostname} => $delay->begin);
 
   if ($args->{myip}) {
