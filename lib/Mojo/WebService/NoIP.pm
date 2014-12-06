@@ -11,7 +11,7 @@ use Mojo::UserAgent;
 has username => sub { die 'username is required' };
 has password => sub { die 'password is required' };
 
-has provider => 'dynupdate.no-ip.com/nic/update';
+has provider => 'http://dynupdate.no-ip.com/nic/update';
 has secure   => 0;
 
 has ua => sub {
@@ -37,6 +37,8 @@ sub update {
 
   $url->query(hostname => $args->{hostname}) if $args->{hostname};
   $url->query(myip     => $args->{myip})     if $args->{myip};
+
+  say "Request: $url";
 
   $self->ua->get($url, $cb ? $cb : ());
 }

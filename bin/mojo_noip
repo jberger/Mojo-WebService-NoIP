@@ -1,16 +1,52 @@
 #!perl
 
 use Mojo::Base -strict;
+use Mojo::IOLoop;
 use Mojo::WebService::NoIP;
 
 use Getopt::Long;
 
-my $const = {};
-my $args  = {};
+my $args = {};
 
-GetOptions($const, 'username=s', 'password=s');
-GetOptions($args, 'hostname=s', 'myip=s', 'offline');
+GetOptions($args, 'username=s', 'password=s', 'hostname=s', 'myip=s', 'offline', 'verbose');
 
-my $noip = Mojo::WebService::NoIP->new($const);
-$noip->update($args);
+my $noip = do {
+  my %const;
+  @const{qw/username password/} = delete @{$args}{qw/username password/};
+  Mojo::WebService::NoIP->new(\%const);
+};
+
+my $command = shift || 'update';
+
+__PACKAGE__->can($command)->();
+
+sub ensure {
+  my $delay = Mojo::IOLoop->delay;
+ 
+  my $ua = $noip->ua->new->max_redirects(0);
+  $ua->get($args->{hostname} => $delay->begin);
+
+  if ($args->{myip}) {
+    $delay->pass($args->{myip});
+  } else {
+    $noip->ua->get('www.portchecktool.com' => $delay->begin);
+  }
+
+  $delay->on( finish => sub {
+    my ($delay, $host, $myip) = @_;
+
+    my $host_ip = $host->remote_address;
+    say "Host IP: $host_ip" if $args->{verbose};
+
+    my $real_ip = ref $myip ? $myip->res->dom->at('#input-ip')->{value} : $myip;
+    say "My IP:   $real_ip" if $args->{verbose};
+
+    update() unless $host_ip eq $real_ip;
+  });
+  $delay->wait;
+}
+
+sub update {
+  say $noip->update($args)->res->body;
+}
 
