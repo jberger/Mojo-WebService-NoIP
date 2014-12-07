@@ -16,22 +16,25 @@ my $noip = do {
   Mojo::WebService::NoIP->new(\%const);
 };
 
-my $clone = sub { my $self = shift; bless {%$self}, ref $self };
-
 my $command = shift || 'update';
 
 __PACKAGE__->can($command)->();
 
 sub ensure {
   my $delay = Mojo::IOLoop->delay;
- 
-  my $ua = $noip->ua->$clone()->max_redirects(0);
-  $ua->get($args->{hostname} => $delay->begin);
+  my $ua = $noip->ua;
 
+  # check the current ip of the desired hostname, prevent redirection
+  my $tx = $ua->build_tx( GET => $args->{hostname} );
+  $tx->res->on(finish => sub { $_[0]->code(200) if $_[0]->is_status_class(300) });
+  $ua->start($tx => $delay->begin);
+
+  # check the current value of ourself unless one has been specified
+  # this uses the noip portchecktool.com site
   if ($args->{myip}) {
     $delay->pass($args->{myip});
   } else {
-    $noip->ua->get('www.portchecktool.com' => $delay->begin);
+    $ua->get('www.portchecktool.com' => $delay->begin);
   }
 
   $delay->on( finish => sub {
